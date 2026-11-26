@@ -200,3 +200,63 @@ cd fraud-rules-backtesting-dashboard
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+
+### Run the pipeline
+# Step 1 – generate synthetic data (writes data/)
+python src/generate_data.py
+
+# Step 2 – apply fraud rules (writes outputs/alerts.csv)
+python src/rules_engine.py
+
+# Step 3 – compute rule performance (writes outputs/rule_performance.csv)
+python src/evaluate.py
+
+# Step 4 – threshold tuning (writes outputs/threshold_tuning.csv)
+python src/threshold_tuning.py
+
+# Step 5 – data quality checks (writes outputs/dq_summary.csv)
+python src/data_quality.py
+
+# Step 6 – launch the dashboard
+streamlit run app/streamlit_app.py
+
+### Run tests
+pytest -q
+
+### 8. Expected Outputs
+# After running the pipeline:
+data/
+  customers.csv                     ~20,000 rows
+  synthetic_transactions.csv        ~108,000 rows (~1.5% fraud)
+
+outputs/
+  alerts.csv                        one row per (transaction, rule) hit
+  rule_performance.csv              one row per rule with proxy metrics
+  threshold_tuning.csv              R001 sweep across 20+ thresholds
+  dq_summary.csv                    data quality checks + pass/fail
+
+### 9. Key Findings (to fill in after running)
+
+### 10. Limitations
+Synthetic labels — is_fraud is generated, not confirmed.
+All detection / false-positive metrics are proxies.
+PoC rule parser — the rules engine uses a simple condition
+evaluator. Production would use a proper rules DSL or vendor engine.
+No alert triage — the project scores rules, not individual alerts.
+No model score — rules only; no ML model is combined.
+Single-market data — no real regional or regulatory variation.
+
+### 11. Future Enhancements
+Combine rule alerts into a risk score and rank alerts.
+Add alert prioritisation by severity and customer segment.
+Build a model + rules hybrid scorer (e.g. XGBoost + rules).
+Add case management outcomes back into the evaluation.
+Add alert-to-fraud funnel visualisation (alert → triage → case).
+Persist outputs to a database instead of CSV for larger datasets.
+Add CI (GitHub Actions) running pytest and linting.
+
+### 12. Links
+Author: Desmond Lai
+
+### 13. License
+For portfolio / educational use only. Synthetic data only.
