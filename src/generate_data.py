@@ -151,9 +151,27 @@ def generate_base_transactions(customers, rng):
 
     timestamps = _make_timestamps(n, rng, START_DATE, N_DAYS, HOUR_WEIGHTS)
 
+    #amounts = np.round(
+    #    rng.lognormal(mean=BASE_AMOUNT_MEAN, sigma=BASE_AMOUNT_SIGMA, size=n), 2
+    #)
+    
+    #What this does: ~5% of normal transactions (P_NORMAL_HIGH_AMOUNT = 0.05) will now also get a high amount from the same lognormal(9.5, 0.6) 
+    #distribution used for fraud. Real card-not-present / high-value spend looks like this — plenty of legitimate large purchases exist alongside fraud.
     amounts = np.round(
         rng.lognormal(mean=BASE_AMOUNT_MEAN, sigma=BASE_AMOUNT_SIGMA, size=n), 2
     )
+    # Boost a small fraction of NORMAL transactions to high amounts, so that
+    # the 'amount > 10000' rule is not a near-perfect fraud classifier.
+    boost_mask = rng.random(n) < P_NORMAL_HIGH_AMOUNT
+    high_amounts = np.round(
+        rng.lognormal(
+            mean=FRAUD_HIGH_AMOUNT_MEAN, sigma=FRAUD_HIGH_AMOUNT_SIGMA, size=n
+        ),
+        2,
+    )
+    amounts = np.where(boost_mask, high_amounts, amounts)
+    
+
 
     # Country: mostly home, sometimes travel.
     travel_mask = rng.random(n) < P_NORMAL_GEO_MISMATCH
