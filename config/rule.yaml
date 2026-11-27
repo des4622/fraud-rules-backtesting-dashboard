@@ -1,0 +1,39 @@
+# Fraud rule definitions.
+# All rules are applied to every transaction in synthetic_transactions.csv.
+
+rules:
+  - rule_id: R001
+    name: High Amount
+    description: Transaction amount above 10,000
+    type: simple
+    condition: "amount > 10000"
+    severity: HIGH
+
+  - rule_id: R002
+    name: Geo Mismatch
+    description: Transaction country differs from customer home country
+    type: simple
+    condition: "country != home_country"
+    severity: MEDIUM
+
+  - rule_id: R003
+    name: New Device High Amount
+    description: New device with amount above 5,000
+    type: simple
+    condition: "is_new_device == 1 and amount > 5000"
+    severity: HIGH
+
+  - rule_id: R004
+    name: Unusual Hour
+    description: Transaction between 01:00 and 05:59
+    type: simple
+    condition: "transaction_hour >= 1 and transaction_hour <= 5"
+    severity: LOW
+
+  - rule_id: R005
+    name: Velocity 3 in 24h
+    description: 3 or more transactions per customer within 24 hours
+    type: velocity
+    window_hours: 24
+    min_count: 3
+    severity: MEDIUM
