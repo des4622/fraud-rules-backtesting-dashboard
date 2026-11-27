@@ -292,8 +292,9 @@ reproduce.
 
 ### Screenshots
 
-![Overview](docs/screenshots/overview.png)
-![Threshold tuning](docs/screenshots/tuning.png)
+<img width="1912" height="916" alt="overview" src="https://github.com/user-attachments/assets/e047ab96-28c7-4478-8e9b-045f330fcab6" />
+<img width="1912" height="912" alt="tuning" src="https://github.com/user-attachments/assets/ac4400e9-a203-475d-9d13-3c8a72b026d5" />
+
 
 ### Suggested improvements for a production version
 
