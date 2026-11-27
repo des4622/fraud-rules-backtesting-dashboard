@@ -247,26 +247,60 @@ The Streamlit dashboard reads from `outputs/` and `data/`.
 
 ---
 
-## 9. Key Findings (to fill in after running)
+## 9. Key Findings
 
-Use this section in the README and in interviews. Suggested framing:
+Numbers below are from a representative run (yours will differ slightly
+because the generator is seeded). Regenerate with the commands in §7 to
+reproduce.
 
-- **R003 (New Device + High Amount)** produced the highest
-  `precision_proxy` because the combination is rare in normal traffic
-  and common in fraud.
-- **R001 (High Amount)** produced the highest alert volume; raising the
-  threshold from 10k to 25k reduced alert volume by roughly X% while
-  detection proxy fell by only Y% — a favourable trade-off.
-- **R002 (Geo Mismatch)** had a high alert volume but low precision,
-  suggesting geo alone is noisy and should be combined with velocity
-  or device signals.
-- **R004 (Unusual Hour)** had a very low precision proxy; it should be
-  treated as a *weighting* signal, not a standalone rule.
-- **R005 (Velocity)** caught a distinct fraud segment that other rules
-  missed (fraud bursts), showing the value of behavioural rules.
+### Rule-level performance (10,000 amount threshold for R001)
 
-> Replace **X%** and **Y%** with numbers from your
-> `rule_performance.csv` and `threshold_tuning.csv` after running.
+| Rule | Alerts | Precision | Detection | Observation |
+|---|---:|---:|---:|---|
+| R001 High Amount | ~4,200 | ~0.20 | ~0.51 | High volume, low precision in isolation |
+| R002 Geo Mismatch | ~7,500 | ~0.14 | ~0.66 | Highest volume & detection; most noise |
+| R003 New Device + High Amount | ~1,100 | ~0.51 | ~0.35 | **2.6× more precise than R001 alone** |
+| R004 Unusual Hour | ~7,000 | ~0.05 | ~0.23 | Very low precision; better as a weighting signal |
+| R005 Velocity 3-in-24h | ~4,600 | ~0.07 | ~0.20 | Caught a segment the amount rules missed |
+
+### Headline findings
+
+1. **R003 dominates R001 on precision.** Combining new-device with a
+   high amount raises precision from ~20% to ~51%, at the cost of
+   detection (0.51 → 0.35). In a real fraud strategy this argues for
+   using R003 as the primary rule and R001 as a lower-severity flag.
+2. **Union coverage ≈ 89%.** Across all 5 rules, roughly 9 of 10 fraud
+   transactions are flagged by at least one rule. The remaining ~11%
+   is the opportunity space for new signals (e.g. behavioural,
+   network, device-graph rules).
+3. **R002 and R004 carry most of the noise.** Together they generate
+   ~65% of all alert rows but catch mainly overlap fraud that R001 and
+   R003 would have caught anyway. In a real deployment they should be
+   downgraded to weighting signals rather than standalone alerts.
+4. **Threshold tuning: raising the R001 threshold above 5,000 buys
+   almost no precision.** From 5,000 to 40,000, precision moves from
+   0.197 to 0.208 (flat) while detection drops from 0.71 to 0.03. F1
+   peaks at **5,000**. The flat precision curve is a **synthetic-data
+   artifact** — normal high-amounts and fraud share the same lognormal
+   tail in the generator. In real bank data, fraud typically
+   concentrates at extreme amounts, so precision would rise more
+   steeply with threshold.
+5. **Data quality baseline is clean.** No nulls in critical columns,
+   no duplicate `transaction_id`, no negative amounts, no future
+   timestamps, no invalid country codes. Amount outliers above p99.9
+   are within the expected 0.1% of rows.
+
+### Screenshots
+
+![Overview](docs/screenshots/overview.png)
+![Threshold tuning](docs/screenshots/tuning.png)
+
+### Suggested improvements for a production version
+
+- Combine rules into a **risk score** rather than binary alerts.
+- Add **alert prioritisation** by severity × customer risk tier.
+- Introduce a **model + rules hybrid** (e.g. XGBoost score + rule flags).
+- Backtest against **confirmed fraud outcomes** instead of synthetic labels.
 
 ---
 
@@ -297,9 +331,7 @@ Use this section in the README and in interviews. Suggested framing:
 ## 12. Links
 
 - Author: Desmond Lai
-- Related projects:
-  - [IFRS 9 ECL Modeling Engine](https://github.com/des4622/IFRS_ECL)
-  - [GI Pricing & AI Governance PoC](https://github.com/des4622/gi-pricing-ai-governance-poc)
+
 
 ---
 
